@@ -1,0 +1,153 @@
+name: 🪲 Test
+on:
+  workflow_call:
+    inputs:
+      enable-sonar-qube:
+        required: false
+        type: boolean
+        default: false
+      enable-cleanup-docker:
+        required: false
+        type: boolean
+        default: false
+      disable-coverage-upload:
+        required: false
+        type: boolean
+        default: false
+      dotnet-logging:
+        required: false
+        type: string
+        default: quiet
+      dotnet-solution:
+        required: true
+        type: string
+      dotnet-version:
+        required: false
+        type: string
+        default: 8.x
+      runs-on:
+        required: false
+        type: string
+        default: ubuntu-latest
+      solution-version:
+        required: true
+        type: string
+      retry-max-attempts:
+        required: false
+        type: number
+        default: 3
+      retry-timeout:
+        required: false
+        type: number
+        default: 15
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+      SONAR_ORGANIZATION:
+        required: false
+      SONAR_PROJECT:
+        required: false
+      SONAR_TOKEN:
+        required: false
+      FETCH_TOKEN:
+        required: false
+
+jobs:
+  testing:
+    name: Testing .NET solution
+    runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
+    env:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        token: ${{ secrets.FETCH_TOKEN || github.token }}
+
+    # Our modules occupy too much disk space. The GitHub-hosted runners ran into the
+    # error: "no space left on device." The pulled images are not cleaned up between
+    # the test runs. One obvious approach is splitting the tests and running them on
+    # multiple runners. However, we need to keep in mind that running too many
+    # simultaneous builds has an impact on others as well. We observed that scheduled
+    # Dependabot builds blocked others in the Testcontainers organization.
+    - name: Free Disk Space - Docker Images
+      uses: jlumbroso/free-disk-space@v1.3.1
+      if: ${{ inputs.enable-cleanup-docker == true && runner.os == 'Linux' }}
+      with:
+        android: true
+        haskell: true
+        dotnet: false
+        large-packages: false
+        tool-cache: false
+        swap-storage: false
+        docker-images: true
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.2.0
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Setup JDK 17
+      if: ${{ inputs.enable-sonar-qube == true }}
+      uses: actions/setup-java@v4.6.0
+      with:
+        java-version: 17
+        distribution: 'zulu'
+
+    - name: Install SonarCloud scanner
+      if: ${{ inputs.enable-sonar-qube == true }}
+      shell: pwsh
+      run: dotnet tool install --global dotnet-sonarscanner
+
+    - name: Start SonarQube Analysis
+      if: ${{ inputs.enable-sonar-qube == true }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      shell: pwsh
+      run: |
+        dotnet-sonarscanner begin /k:"${{ secrets.SONAR_PROJECT }}" /o:"${{ secrets.SONAR_ORGANIZATION }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml" /v:"${{ inputs.solution-version }}"
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ inputs.dotnet-solution }} -v ${{ inputs.dotnet-logging }}
+
+    - name: Build
+      run: dotnet build ${{ inputs.dotnet-solution }} -c Release -v ${{ inputs.dotnet-logging || 'quiet' }} --no-restore /p:GeneratePackageOnBuild=false
+
+    - name: Test
+      id: test
+      uses: nick-fields/retry@v3.0.0
+      with:
+        timeout_minutes: ${{ inputs.retry-timeout || 15 }}
+        max_attempts: ${{ inputs.retry-max-attempts || 1 }}
+        shell: pwsh
+        command: |
+          dotnet test ${{ inputs.dotnet-solution }} -c Release -v ${{ inputs.dotnet-logging }} --no-build --no-restore --collect:"XPlat Code Coverage;Format=cobertura,opencover" /p:GeneratePackageOnBuild=false -- --coverage --coverage-output-format cobertura
+
+    - name: Stop SonarQube Analysis
+      if: ${{ inputs.enable-sonar-qube == true && (success() || steps.test.conclusion == 'failure') }}
+      id: sonar
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      shell: pwsh
+      run: |
+        dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+    - name: Update codecov
+      uses: codecov/codecov-action@v5.1.2
+      if: ${{ env.codecov_token != '' && (success() || steps.test.conclusion == 'failure' || steps.sonar.conclusion == 'skipped' ) }}
+      with:
+        token: ${{ env.codecov_token }}
+        fail_ci_if_error: true
+
+    - name: Upload Coverage Reports
+      uses: actions/upload-artifact@v4.6.0
+      if: ${{ inputs.disable-coverage-upload == false }}
+      with:
+        name: "coverage"
+        path: |
+          **/TestResults/**/*.opencover.xml

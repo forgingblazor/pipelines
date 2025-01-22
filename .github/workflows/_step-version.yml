@@ -1,3 +1,4 @@
+name: 🔍 Version
 on:
   workflow_call:
     inputs:
