@@ -6,22 +6,9 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 9.x
-
-      - name: Install dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build
-
-      - name: Test
-        run: dotnet test
+  execute:
+    uses: ./.github/workflows/execute-dotnet.yml
+    with:
+      dotnet-version: 9.x
+      dotnet-solution: ./tests/abstractions/ForgingBlazor.Abstractions.sln
+    secrets: inherit

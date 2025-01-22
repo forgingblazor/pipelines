@@ -1,0 +1,29 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        required: true
+        type: string
+        default: 9.x
+      dotnet-solution:
+        required: true
+        type: string
+    secrets:
+      FETCH_TOKEN:
+        required: true
+
+concurrency:
+  group: ${{ github.workflow_ref }}@${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_SYSTEM_GLOBALIZATION_INVARIANT:
+
+jobs:
+  commitlinter:
+    name: Commit Linter
+    uses: ./.github/workflows/_step-commitlinter.yml
+    secrets: inherit
