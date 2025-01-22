@@ -39,7 +39,10 @@ jobs:
   version:
     name: Detect Solution Version
     uses: ./.github/workflows/_step-version.yml
+    strategy:
+      matrix:
+        runs-on: ${{ inputs.runs-on }}
     secrets: inherit
     with:
       dotnet-version: ${{ inputs.dotnet-version }}
-      runs-on: ${{ inputs.runs-on }}
+      runs-on: ${{ matrix.runs-on }}
