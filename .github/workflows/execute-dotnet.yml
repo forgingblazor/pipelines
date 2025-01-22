@@ -80,7 +80,7 @@ jobs:
       dotnet-version: ${{ inputs.dotnet-version }}
 
   tests:
-    name: Test
+    name: Test on `${{ matrix.runs-on }}`
     uses: ./.github/workflows/_step-dotnet-test.yml
     needs:
       - commitlinter
