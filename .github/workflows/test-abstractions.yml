@@ -6,7 +6,7 @@ on:
 
 jobs:
   execute:
-    name: Test execution
+    name: CI Tests
     uses: ./.github/workflows/execute-dotnet.yml
     with:
       dotnet-version: ${{ vars.DOTNET_VERSIONS }}
