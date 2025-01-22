@@ -16,7 +16,20 @@ updates:
       prefix: "chore(ci)"
     labels:
       - "dependency:actions"
-    open-pull-requests-limit: 20
+
+    # Add assignees
+    assignees:
+      - "samtrion"
+
+  - package-ecosystem: gitsubmodule
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependency:submodule"
+
     # Add assignees
     assignees:
       - "samtrion"
