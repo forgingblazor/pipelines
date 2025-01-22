@@ -4,10 +4,6 @@ on:
       dotnet-version:
         required: false
         type: string
-      runs-on:
-        required: false
-        type: string
-        default: ubuntu-latest
     secrets:
       FETCH_TOKEN:
         required: false
@@ -19,7 +15,7 @@ on:
 jobs:
   detect-version:
     name: Detect Version
-    runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
 
     outputs:
       version: ${{ steps.gitversion.outputs.fullSemVer }}

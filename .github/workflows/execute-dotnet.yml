@@ -11,10 +11,7 @@ on:
       runs-on:
         required: false
         type: string
-        default: |
-          ubuntu-latest
-          windows-latest
-          macos-latest
+        default: '["ubuntu-latest", "windows-latest", "macos-latest"]'
 
     secrets:
       FETCH_TOKEN:
@@ -39,10 +36,6 @@ jobs:
   version:
     name: Detect Solution Version
     uses: ./.github/workflows/_step-version.yml
-    strategy:
-      matrix:
-        runs-on: ${{ inputs.runs-on }}
     secrets: inherit
     with:
       dotnet-version: ${{ inputs.dotnet-version }}
-      runs-on: ${{ matrix.runs-on }}
