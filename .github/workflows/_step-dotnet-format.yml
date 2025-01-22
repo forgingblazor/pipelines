@@ -1,0 +1,44 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-logging:
+        required: false
+        type: string
+        default: minimal
+      dotnet-version:
+        required: false
+        type: string
+        default: 8.x
+    secrets:
+      FETCH_TOKEN:
+        required: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  format:
+    name: Validate Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        token: ${{ secrets.FETCH_TOKEN || github.token }}
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.2.0
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Install CSharpier
+      run: |
+        dotnet tool install --global csharpier
+
+    - name: Linting solution
+      run: |
+        dotnet csharpier --check .

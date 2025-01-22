@@ -1,0 +1,14 @@
+name: ForgingBlazor.Abstractions
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  execute:
+    name: Test execution
+    uses: ./.github/workflows/execute-dotnet.yml
+    with:
+      dotnet-version: ${{ vars.DOTNET_VERSIONS }}
+      dotnet-solution: ./tests/abstractions/ForgingBlazor.Abstractions.sln
+    secrets: inherit

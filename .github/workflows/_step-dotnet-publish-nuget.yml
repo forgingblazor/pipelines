@@ -1,0 +1,21 @@
+on:
+  workflow_call:
+    secrets:
+      NUGET_TOKEN:
+        required: true
+
+jobs:
+  nuget:
+    name: Publish NuGet Packages
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: release-packages
+        path: packages
+
+    - name: Push packages to nuget.org/profiles/NetEvolve
+      run: dotnet nuget push packages/**/*.nupkg -k ${{ secrets.NUGET_TOKEN }} -s https://api.nuget.org/v3/index.json --skip-duplicate

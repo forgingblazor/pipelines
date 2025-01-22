@@ -1,0 +1,23 @@
+name: Create pipelines release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  version:
+    name: Version
+    uses: ./.github/workflows/_step-version.yml
+    with:
+      dotnet-version: '8.x'
+
+  release:
+    name: Release
+    needs:
+      - version
+    uses: ./.github/workflows/_step-dotnet-draft-release.yml
+    with:
+      runs-on: 'ubuntu-latest'
+      solution-version: ${{ needs.version.outputs.solution-version }}

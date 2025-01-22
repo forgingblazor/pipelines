@@ -1,0 +1,152 @@
+on:
+  workflow_call:
+    inputs:
+      enable-sonar-qube:
+        required: false
+        type: boolean
+        default: false
+      enable-cleanup-docker:
+        required: false
+        type: boolean
+        default: false
+      disable-coverage-upload:
+        required: false
+        type: boolean
+        default: false
+      disable-format:
+        required: false
+        type: boolean
+        default: false
+      disable-publish:
+        required: false
+        type: boolean
+        default: false
+      dotnet-logging:
+        required: false
+        type: string
+        default: minimal
+      dotnet-version:
+        required: true
+        type: string
+        default: 9.x
+      dotnet-solution:
+        required: true
+        type: string
+      retry-max-attempts:
+        required: false
+        type: number
+        default: 3
+      retry-timeout:
+        required: false
+        type: number
+        default: 15
+      runs-on:
+        required: false
+        type: string
+        default: '["ubuntu-latest", "windows-latest"]'
+
+    secrets:
+      FETCH_TOKEN:
+        required: false
+
+concurrency:
+  group: ${{ github.workflow_ref }}@${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 0
+
+jobs:
+  commitlinter:
+    name: Commit Linter
+    uses: ./.github/workflows/_step-commitlinter.yml
+    secrets: inherit
+
+  version:
+    name: Version
+    uses: ./.github/workflows/_step-version.yml
+    secrets: inherit
+    with:
+      dotnet-version: ${{ inputs.dotnet-version }}
+
+  format:
+    name: Format
+    uses: ./.github/workflows/_step-dotnet-format.yml
+    if: ${{ inputs.disable-format == false }}
+    needs:
+      - commitlinter
+    secrets: inherit
+    with:
+      dotnet-logging: ${{ inputs.dotnet-logging }}
+      dotnet-version: ${{ inputs.dotnet-version }}
+
+  tests:
+    name: Test Matrix
+    uses: ./.github/workflows/_step-dotnet-test.yml
+    needs:
+      - commitlinter
+      - version
+    strategy:
+      matrix:
+        runs-on: ${{ fromJson(inputs.runs-on) }}
+
+    secrets: inherit
+    with:
+      enable-sonar-qube: ${{ inputs.enable-sonar-qube || false }}
+      enable-cleanup-docker: ${{ inputs.enable-cleanup-docker || false }}
+      disable-coverage-upload: ${{ inputs.disable-coverage-upload || false }}
+      dotnet-logging: ${{ inputs.dotnet-logging  }}
+      dotnet-solution : ${{ inputs.dotnet-solution }}
+      dotnet-version: ${{ inputs.dotnet-version }}
+      runs-on: ${{ matrix.runs-on}}
+      solution-version: ${{ needs.version.outputs.solution-version }}
+      retry-max-attempts: ${{ inputs.retry-max-attempts || 3 }}
+      retry-timeout: ${{ inputs.retry-timeout || 15 }}
+
+  build:
+    name: Build
+    uses: ./.github/workflows/_step-dotnet-build.yml
+    if: ${{ !cancelled() && !failure() }}
+    needs:
+      - commitlinter
+      - version
+    secrets: inherit
+    with:
+      disable-publish: ${{ inputs.disable-publish || false }}
+      dotnet-logging: ${{ inputs.dotnet-logging || 'minimal' }}
+      dotnet-solution: ${{ inputs.dotnet-solution }}
+      dotnet-version: ${{ inputs.dotnet-version || '8.x' }}
+
+  dependamerge:
+    name: Dependabot Merge
+    if: ${{ !cancelled() && !failure() && github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' }}
+    uses: ./.github/workflows/_step-dependamerge.yml
+    needs:
+      - tests
+      - build
+    secrets: inherit
+
+  publish-nuget:
+    name: Publish NuGet
+    if: ${{ !cancelled() && !failure() && inputs.disable-publish == false && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    uses: ./.github/workflows/_step-dotnet-publish-nuget.yml
+    needs:
+      - tests
+      - build
+    secrets: inherit
+
+  release:
+    name: Release
+    if: ${{ !cancelled() && !failure() && inputs.disable-publish == false && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    needs:
+      - version
+      - tests
+      - build
+      - publish-nuget
+    uses: ./.github/workflows/_step-dotnet-draft-release.yml
+    with:
+      solution-version: ${{ needs.version.outputs.solution-version }}
+    secrets: inherit

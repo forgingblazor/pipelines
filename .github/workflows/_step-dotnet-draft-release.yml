@@ -1,0 +1,41 @@
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        required: false
+        type: string
+        default: ubuntu-latest
+      solution-version:
+        required: true
+        type: string
+    secrets:
+      FETCH_TOKEN:
+        required: false
+
+jobs:
+  draft-release:
+    name: Create Release
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        token: ${{ secrets.FETCH_TOKEN || github.token }}
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: release-packages
+        path: packages
+
+    - name: Release Drafter
+      uses: release-drafter/release-drafter@v6.0.0
+      with:
+        version: ${{ inputs.solution-version }}
+        publish: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

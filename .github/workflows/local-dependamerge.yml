@@ -1,0 +1,18 @@
+name: Auto Merge Minor Upgrades
+
+on:
+  pull_request:
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Dependabot Auto Merge
+        uses: dailydevops/dependamerge-action@v1.2.30
+        with:
+          token: ${{ secrets.DEPENDABOT }}
+          command: squash
+          handle-submodule: true
+          target: minor
