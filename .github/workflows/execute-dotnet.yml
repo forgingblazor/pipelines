@@ -10,7 +10,7 @@ on:
         type: string
     secrets:
       FETCH_TOKEN:
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.workflow_ref }}@${{ github.ref }}
