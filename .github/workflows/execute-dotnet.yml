@@ -39,7 +39,7 @@ on:
       runs-on:
         required: false
         type: string
-        default: '["ubuntu-latest", "windows-latest", "macos-latest"]'
+        default: '["ubuntu-latest", "windows-latest"]'
 
     secrets:
       FETCH_TOKEN:
