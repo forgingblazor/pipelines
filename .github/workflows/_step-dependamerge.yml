@@ -1,0 +1,19 @@
+on:
+  workflow_call:
+    secrets:
+      DEPENDABOT:
+        required: true
+
+jobs:
+  dependabot:
+    name: Dependabot Auto Merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dependabot Auto Merge
+        uses: dailydevops/dependamerge-action@v1.2.30
+        with:
+          token: ${{ secrets.DEPENDABOT }}
+          command: squash
+          handle-submodule: true
+          target: minor

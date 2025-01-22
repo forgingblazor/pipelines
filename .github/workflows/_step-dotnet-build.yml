@@ -1,0 +1,55 @@
+on:
+  workflow_call:
+    inputs:
+      disable-publish:
+        required: false
+        type: boolean
+        default: false
+      dotnet-logging:
+        required: false
+        type: string
+        default: quiet
+      dotnet-solution:
+        required: true
+        type: string
+      dotnet-version:
+        required: false
+        type: string
+        default: 8.x
+    secrets:
+      FETCH_TOKEN:
+        required: false
+
+jobs:
+  build:
+    name: .NET solution
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        token: ${{ secrets.FETCH_TOKEN || github.token }}
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.2.0
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ inputs.dotnet-solution }} -v ${{ inputs.dotnet-logging }}
+
+    - name: Build
+      run: dotnet build ${{ inputs.dotnet-solution }} -v ${{ inputs.dotnet-logging }} -c Release --no-restore
+
+    - name: Upload NuGet packages
+      if: ${{ inputs.disable-publish != true }}
+      uses: actions/upload-artifact@v4.6.0
+      with:
+        name: release-packages
+        if-no-files-found: error
+        path: |
+          **/*.nupkg
+          **/*.snupkg

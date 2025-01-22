@@ -17,6 +17,10 @@ on:
         required: false
         type: boolean
         default: false
+      disable-publish:
+        required: false
+        type: boolean
+        default: false
       dotnet-logging:
         required: false
         type: string
@@ -101,3 +105,48 @@ jobs:
       solution-version: ${{ needs.version.outputs.solution-version }}
       retry-max-attempts: ${{ inputs.retry-max-attempts || 3 }}
       retry-timeout: ${{ inputs.retry-timeout || 15 }}
+
+  build:
+    name: Build
+    uses: ./.github/workflows/_step-dotnet-build.yml
+    if: ${{ !cancelled() && !failure() }}
+    needs:
+      - commitlinter
+      - version
+    secrets: inherit
+    with:
+      disable-publish: ${{ inputs.disable-publish || false }}
+      dotnet-logging: ${{ inputs.dotnet-logging || 'quiet' }}
+      dotnet-solution: ${{ inputs.dotnet-solution }}
+      dotnet-version: ${{ inputs.dotnet-version || '8.x' }}
+
+  dependamerge:
+    name: Dependabot Merge
+    if: ${{ !cancelled() && !failure() && github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' }}
+    uses: ./.github/workflows/_step-dependamerge.yml
+    needs:
+      - tests
+      - build
+    secrets: inherit
+
+  publish-nuget:
+    name: Publish NuGet
+    if: ${{ !cancelled() && !failure() && inputs.disable-publish == false && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    uses: ./.github/workflows/_step-dotnet-publish-nuget.yml
+    needs:
+      - tests
+      - build
+    secrets: inherit
+
+  release:
+    name: Release
+    if: ${{ !cancelled() && !failure() && inputs.disable-publish == false && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    needs:
+      - version
+      - tests
+      - build
+      - publish-nuget
+    uses: ./.github/workflows/_step-dotnet-draft-release.yml
+    with:
+      solution-version: ${{ needs.version.outputs.solution-version }}
+    secrets: inherit
