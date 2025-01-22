@@ -1,5 +1,3 @@
-name: Test ForgingBlazor.Abstractions
-
 on:
   pull_request:
     branches:
@@ -7,6 +5,7 @@ on:
 
 jobs:
   execute:
+    name: Test ForgingBlazor.Abstractions
     uses: ./.github/workflows/execute-dotnet.yml
     with:
       dotnet-version: 9.x
