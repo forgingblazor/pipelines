@@ -21,6 +21,6 @@ jobs:
           submodules: recursive
           token: ${{ secrets.FETCH_TOKEN || github.token }}
 
-      - uses: wagoid/commitlint-github-action@v6.2.0
+      - uses: wagoid/commitlint-github-action@v6.2.1
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules
