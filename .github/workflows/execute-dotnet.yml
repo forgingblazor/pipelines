@@ -24,7 +24,7 @@ on:
       dotnet-logging:
         required: false
         type: string
-        default: quiet
+        default: minimal
       dotnet-version:
         required: true
         type: string
@@ -116,7 +116,7 @@ jobs:
     secrets: inherit
     with:
       disable-publish: ${{ inputs.disable-publish || false }}
-      dotnet-logging: ${{ inputs.dotnet-logging || 'quiet' }}
+      dotnet-logging: ${{ inputs.dotnet-logging || 'minimal' }}
       dotnet-solution: ${{ inputs.dotnet-solution }}
       dotnet-version: ${{ inputs.dotnet-version || '8.x' }}
 
