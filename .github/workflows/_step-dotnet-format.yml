@@ -1,4 +1,3 @@
-name: 🔍 Format
 on:
   workflow_call:
     inputs:
