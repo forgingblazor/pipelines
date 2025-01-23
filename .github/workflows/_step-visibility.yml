@@ -28,3 +28,6 @@ jobs:
         repository: ${{ github.repository }}
         # optional parameter defaults to the current user
         token: ${{ secrets.FETCH_TOKEN || github.token }}
+
+    - run: echo "Public ${{ steps.visibility.outputs.is_public }}"
+    - run: echo "Private ${{ steps.visibility.outputs.is_private }}"
