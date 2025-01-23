@@ -111,6 +111,7 @@ jobs:
     uses: ./.github/workflows/_step-dotnet-build.yml
     if: ${{ !cancelled() && !failure() }}
     needs:
+      - format
       - commitlinter
       - version
     secrets: inherit
