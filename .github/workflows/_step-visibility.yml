@@ -29,5 +29,15 @@ jobs:
         # optional parameter defaults to the current user
         token: ${{ secrets.FETCH_TOKEN || github.token }}
 
+    - if: ${{ steps.visibility.outputs.is_public == 'true' }}
+      run: echo "Repo is Public"
+      # Run additional tasks that are required for public repos
+      # e.g. alerting that the repo is public when it should not be
+
+    - if: ${{ steps.visibility.outputs.is_private == 'true' }}
+      run: echo "Repo is PRIVATE"
+      # Run additional steps that are only required on private repos
+
+    - run: echo "Status ${{ steps.visibility.outputs.status }}"
     - run: echo "Public ${{ steps.visibility.outputs.is_public }}"
     - run: echo "Private ${{ steps.visibility.outputs.is_private }}"
