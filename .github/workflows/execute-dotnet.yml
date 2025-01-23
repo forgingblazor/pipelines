@@ -101,9 +101,9 @@ jobs:
 
     secrets: inherit
     with:
-      enable-sonar-qube: ${{ needs.visibility.outputs.public && (inputs.enable-sonar-qube || false) }}
+      enable-sonar-qube: ${{ needs.visibility.outputs.public && inputs.enable-sonar-qube }}
       enable-cleanup-docker: ${{ inputs.enable-cleanup-docker || false }}
-      disable-coverage-upload: ${{ needs.visibility.outputs.private || (inputs.disable-coverage-upload || false) }}
+      disable-coverage-upload: ${{ inputs.disable-coverage-upload || false }}
       dotnet-logging: ${{ inputs.dotnet-logging  }}
       dotnet-solution : ${{ inputs.dotnet-solution }}
       dotnet-version: ${{ inputs.dotnet-version }}
