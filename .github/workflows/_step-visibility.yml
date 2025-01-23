@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+    secrets:
+      FETCH_TOKEN:
+        required: false
+    outputs:
+      public:
+        description: 'The repository visibility is public'
+        value: ${{ jobs.visibility.outputs.public }}
+      private:
+        description: 'The repository visibility is private'
+        value: ${{ jobs.visibility.outputs.private }}
+
+jobs:
+  visibility:
+    name: Repository Visibility
+    runs-on: ubuntu-latest
+
+    outputs:
+      public: ${{ steps.visibility.outputs.is_public }}
+      private: ${{ steps.visibility.outputs.is_private }}
+
+    steps:
+    - uses: credfeto/action-repo-visibility@v1.2.0
+      id: visibility
+      with:
+        # optional parameter defaults to the current repo
+        repository: ${{ github.repository }}
+        # optional parameter defaults to the current user
+        token: ${{ secrets.FETCH_TOKEN || github.token }}

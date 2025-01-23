@@ -72,6 +72,11 @@ jobs:
     with:
       dotnet-version: ${{ inputs.dotnet-version }}
 
+  visibility:
+    name: Visibility
+    uses: ./.github/workflows/_step-visibility.yml
+    secrets: inherit
+
   format:
     name: Format
     uses: ./.github/workflows/_step-dotnet-format.yml
@@ -89,15 +94,16 @@ jobs:
     needs:
       - commitlinter
       - version
+      - visibility
     strategy:
       matrix:
         runs-on: ${{ fromJson(inputs.runs-on) }}
 
     secrets: inherit
     with:
-      enable-sonar-qube: ${{ inputs.enable-sonar-qube || false }}
+      enable-sonar-qube: ${{ needs.visibility.outputs.public && (inputs.enable-sonar-qube || false) }}
       enable-cleanup-docker: ${{ inputs.enable-cleanup-docker || false }}
-      disable-coverage-upload: ${{ inputs.disable-coverage-upload || false }}
+      disable-coverage-upload: ${{ needs.visibility.outputs.private || (inputs.disable-coverage-upload || false) }}
       dotnet-logging: ${{ inputs.dotnet-logging  }}
       dotnet-solution : ${{ inputs.dotnet-solution }}
       dotnet-version: ${{ inputs.dotnet-version }}
@@ -109,7 +115,6 @@ jobs:
   build:
     name: Build
     uses: ./.github/workflows/_step-dotnet-build.yml
-    if: ${{ !cancelled() && !failure() }}
     needs:
       - format
       - commitlinter
