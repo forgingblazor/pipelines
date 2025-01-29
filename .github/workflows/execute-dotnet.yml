@@ -109,7 +109,6 @@ jobs:
   build:
     name: Build
     uses: ./.github/workflows/_step-dotnet-build.yml
-    if: ${{ !cancelled() && !failure() }}
     needs:
       - format
       - commitlinter
