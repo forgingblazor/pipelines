@@ -1,3 +1,0 @@
-[submodule "tests/abstractions"]
-	path = tests/abstractions
-	url = https://github.com/forgingblazor/forgingblazor-abstractions.git
